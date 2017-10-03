@@ -5,6 +5,7 @@ class Api extends CI_Controller {
 
 	private $fb, $accessToken;
 	protected $pageId = 'cocacolanetherlands';
+	protected $top = 5;
 
 	public function __construct() {
 		parent::__construct();
@@ -63,6 +64,7 @@ class Api extends CI_Controller {
 		}	
 	}
 
+  // Top	5	users	who	have	liked	most	of	these	20	posts
 	public function get_users_posts_likes() {
 
 		$method = $_SERVER['REQUEST_METHOD'];
@@ -87,58 +89,39 @@ class Api extends CI_Controller {
 	  			array_push($likes, $dataLikes);
 	  		}
 
-	  		$data = $this->getTopLikes($likes, 5); 
+	  		$data = $this->getTopLikes($likes, $this->top); 
 	  		json_output($status,array('status' => $status,'data' => $data));
 
 			} catch(Facebook\Exceptions\FacebookResponseException $e) {
-			  json_output(400,array('status' => 400,'message' => 'Graph returned an error: ' . $e->getMessage()));
+			  json_output(400, array('status' => 400,'message' => 'Graph returned an error: ' . $e->getMessage()));
 			  exit;
 			} catch(Facebook\Exceptions\FacebookSDKException $e) {
-			  json_output(400,array('status' => 400,'message' => 'SDK returned an error: ' . $e->getMessage()));
+			  json_output(400, array('status' => 400,'message' => 'SDK returned an error: ' . $e->getMessage()));
 			  exit;
 			}
 		}	
 	}
 
-
-	public function get_posts_oredered() {
+	// Data structure of latest 20 posts, ordered based on the number of likes they receive, along with the number of likes each post has received. 
+	public function get_posts_ordered() {
 		
 		$method = $_SERVER['REQUEST_METHOD'];
 		if($method != 'GET'){
 			json_output(400,array('status' => 400,'message' => 'Bad request.'));
 		} else {
-			$structure = array();
-
 			try {  
-	  		$response = $this->fb->get('/'.$this->pageId.'/posts?limit=20', $this->accessToken );
+	  		$response = $this->fb->get('/'.$this->pageId.'/posts?limit=20&fields=id,message,created_time,likes.limit(1).summary(true)', $this->accessToken );
 	  		$data = $response->getDecodedBody()['data'];
 	  		$status = $response->getHttpStatusCode();
 
-	  		foreach ($data as $values) {
-	  			// Post ID and Number of likes per post
-	  			$postId = $values['id'];
-	  			$response_summary = $this->fb->get('/'.$postId.'/?fields=likes.limit(1).summary(true)', $this->accessToken );
-	  			$data_summary = $response_summary->getDecodedBody()['likes'];
-	  			
-	  			array_push(
-						$structure, 
-					  array(
-				  		'id' => $values['id'],
-						  'message' => $values['message'],
-						  'created_time' => $values['created_time'],
-						  'number_of_likes' => $data_summary['summary']['total_count']
-						)
-	  			);
-	  		}
-
-	  		$data = $this->orderByLikes($structure);
-	  		json_output($status,array('status' => $status,'data' => $data));
+	  		$data = $this->orderByLikes($data);
+	  		json_output($status, array('status' => $status,'data' => $data));
 
 			} catch(Facebook\Exceptions\FacebookResponseException $e) {
-			  json_output(400,array('status' => 400,'message' => 'Graph returned an error: ' . $e->getMessage()));
+			  json_output(400, array('status' => 400,'message' => 'Graph returned an error: ' . $e->getMessage()));
 			  exit;
 			} catch(Facebook\Exceptions\FacebookSDKException $e) {
-			  json_output(400,array('status' => 400,'message' => 'SDK returned an error: ' . $e->getMessage()));
+			  json_output(400, array('status' => 400,'message' => 'SDK returned an error: ' . $e->getMessage()));
 			  exit;
 			}
 		}	
@@ -150,8 +133,8 @@ class Api extends CI_Controller {
 	private function getTopLikes($arrays, $top) {
 
 		$uniqueUsers = array();
-		$allUsers = array();
-		$structure = array();
+		$allUsers    = array();
+		$structure   = array();
 
 		foreach ($arrays as $key => $values) {
 			foreach ($values as $key => $user) {
@@ -174,22 +157,26 @@ class Api extends CI_Controller {
 	}
 
 	private function orderByLikes($data) {	
-		usort($data, function($a,$b) {
+		$structure = array();
+		
+		foreach ($data as $values) {
+			array_push(
+				$structure, 
+			  array(
+		  		'id' => $values['id'],
+				  'message' => $values['message'],
+				  'created_time' => $values['created_time'],
+				  'number_of_likes' => $values['likes']['summary']['total_count']
+				)
+			);
+		}
+
+		usort($structure, function($a, $b) {
 		    return $a['number_of_likes'] <=> $b['number_of_likes'];
 		});	
-		$data = array_reverse($data, true);
-		return $data;
-	}
+		$structure = array_reverse($structure, true);
 
-	/*############################################ Config Setup ##########################################################*/
-
-	
-	// Store Facebook App details in a Mongodb document
-	private function addToMongo() {
-		$client = new MongoDB\Client("mongodb://localhost:27017");
-		$collection = $client->digined->facebook_app;
-		$result = $collection->insertOne( [ 'appId' => '103298347092152', 'appSecret' => 'c9f4c5b4151fb92f3cc8598278c28ec4', 'accessToken' => 'EAABd8wVIyLgBABH0ZBGyRMVH7MrYuyDysjTcyLJZCkXsIDXrzB12LkZChwOFFqtBXZBWcyoUlg656RuvCkJUZCclaWz0NLHDenPixAObvMaQ5g72ZBaGighI7bbb8D70y5hyhuBUqDCUxOqFFhoLuDzUmqVK0rxHSSMUOP9qWS4nOXkZCM32B92' ] );
-		echo "Inserted with Object ID '{$result->getInsertedId()}'";
+		return $structure;
 	}
 
 }
