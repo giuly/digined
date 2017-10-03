@@ -172,7 +172,7 @@ class Api extends CI_Controller {
 		}
 
 		usort($structure, function($a, $b) {
-		    return $a['number_of_likes'] <=> $b['number_of_likes'];
+		    return $b['number_of_likes'] - $a['number_of_likes'];
 		});	
 		$structure = array_reverse($structure, true);
 
