@@ -26,13 +26,13 @@ class Api extends CI_Controller {
 
 		// Instantiate PHP FBK SDK
 		$fb = new Facebook\Facebook([
-	    'app_id'     => $credentials->appId,
-	    'app_secret' => $credentials->appSecret,
-	    'default_graph_version' => $credentials->appVersion,
-	    'default_access_token' => 'access_token'
-    ]);
+		    'app_id'     => $credentials->appId,
+		    'app_secret' => $credentials->appSecret,
+		    'default_graph_version' => $credentials->appVersion,
+		    'default_access_token' => 'access_token'
+	        ]);
 
-    $this->fb = $fb;
+    		$this->fb = $fb;
 	}
 
 	public function index(){
@@ -42,7 +42,7 @@ class Api extends CI_Controller {
 
 	/*############################################### API Methods ######################################################*/
 
-	// Latest	20 posts by the	CocaColaNetherlands
+	// Latest 20 posts by the CocaColaNetherlands
 	public function get_latest_posts() {
 		$method = $_SERVER['REQUEST_METHOD'];
 		if($method != 'GET'){
@@ -61,7 +61,7 @@ class Api extends CI_Controller {
 		}	
 	}
 
-  // Top	5	users	who	have	liked	most	of	these	20	posts
+  	// Top	5 users	who have liked most of these 20	posts
 	public function get_users_posts_likes() {
 		$method = $_SERVER['REQUEST_METHOD'];
 		if($method != 'GET'){
@@ -110,7 +110,7 @@ class Api extends CI_Controller {
 	}
 
 
-	/*############################################# Bussiness Logic ######################################################*/
+	/*############################################# Process Data Methods ######################################################*/
 	/**
 	* Get elements occurrence within a set of arrays
 	* @param - array
