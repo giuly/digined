@@ -6,6 +6,7 @@ class Api extends CI_Controller {
 	private $fb, $accessToken;
 	protected $pageId = 'cocacolanetherlands';
 	protected $top = 5;
+	protected $postLimit = 20;
 
 	public function __construct() {
 		parent::__construct();
@@ -43,30 +44,25 @@ class Api extends CI_Controller {
 
 	// Latest	20 posts by the	CocaColaNetherlands
 	public function get_latest_posts() {
-
 		$method = $_SERVER['REQUEST_METHOD'];
 		if($method != 'GET'){
 			json_output(400, array('status' => 400,'message' => 'Bad request.'));
 		} else {
 			try {  
-	  		$response = $this->fb->get('/'.$this->pageId.'/posts?limit=20', $this->accessToken );
+	  		$response = $this->fb->get('/'.$this->pageId.'/posts?limit='.$this->postLimit.'', $this->accessToken );
 	  		$data = $response->getDecodedBody()['data'];
 	  		$status = $response->getHttpStatusCode();
 
 	  		json_output($status, array('status' => $status,'data' => $data));
-			} catch(Facebook\Exceptions\FacebookResponseException $e) {
-			  json_output(400, array('status' => 400,'message' => 'Graph returned an error: ' . $e->getMessage()));
-			  exit;
-			} catch(Facebook\Exceptions\FacebookSDKException $e) {
-			  json_output(400, array('status' => 400,'message' => 'SDK returned an error: ' . $e->getMessage()));
-			  exit;
+			} catch (Facebook\Exceptions\FacebookResponseException $e) {
+			  $errorCode = $e->getHttpStatusCode();
+				json_output($errorCode, array('status' => $errorCode,'message' => $e->getMessage()));
 			}
 		}	
 	}
 
   // Top	5	users	who	have	liked	most	of	these	20	posts
 	public function get_users_posts_likes() {
-
 		$method = $_SERVER['REQUEST_METHOD'];
 		if($method != 'GET'){
 			json_output(400, array('status' => 400,'message' => 'Bad request.'));
@@ -74,70 +70,61 @@ class Api extends CI_Controller {
 			$likes = array();
 
 			try {  
-	  		$response = $this->fb->get('/'.$this->pageId.'/posts?limit=20&fields=likes.limit(1).summary(true)', $this->accessToken );
-	  		$data = $response->getDecodedBody()['data'];
-	  		$status = $response->getHttpStatusCode();
+	  		$tmpResponse = $this->fb->get('/'.$this->pageId.'/posts?limit='.$this->postLimit.'&fields=likes.limit(1).summary(true)', $this->accessToken );
+	  		$tmpData = $tmpResponse->getDecodedBody()['data'];
+	  		$maxLikes = $this->getMaxLikes($tmpData);
 
-	  		foreach ($data as $values) {
+  			$response = $this->fb->get('/'.$this->pageId.'/posts?limit='.$this->postLimit.'&fields=likes.limit('.$maxLikes.')', $this->accessToken );
+  			$dataLikes = $response->getDecodedBody()['data'];
+  			$status = $response->getHttpStatusCode();
 
-	  			// Post ID and Number of likes per post
-	  			$postId = $values['id'];
-	  			$numberOfLikes = $values['likes']['summary']['total_count'];
-
-	  			$response = $this->fb->get('/'.$postId.'/likes?limit='.$numberOfLikes, $this->accessToken );
-	  			$dataLikes = $response->getDecodedBody()['data'];
-	  			array_push($likes, $dataLikes);
-	  		}
-
-	  		$data = $this->getTopLikes($likes, $this->top); 
+	  		$data = $this->getTopLikes($dataLikes, $this->top); 
 	  		json_output($status,array('status' => $status,'data' => $data));
 
-			} catch(Facebook\Exceptions\FacebookResponseException $e) {
-			  json_output(400, array('status' => 400,'message' => 'Graph returned an error: ' . $e->getMessage()));
-			  exit;
-			} catch(Facebook\Exceptions\FacebookSDKException $e) {
-			  json_output(400, array('status' => 400,'message' => 'SDK returned an error: ' . $e->getMessage()));
-			  exit;
+			} catch (Facebook\Exceptions\FacebookResponseException $e) {
+			  $errorCode = $e->getHttpStatusCode();
+				json_output($errorCode, array('status' => $errorCode,'message' => $e->getMessage()));
 			}
 		}	
 	}
 
 	// Data structure of latest 20 posts, ordered based on the number of likes they receive, along with the number of likes each post has received. 
 	public function get_posts_ordered() {
-		
 		$method = $_SERVER['REQUEST_METHOD'];
 		if($method != 'GET'){
 			json_output(400,array('status' => 400,'message' => 'Bad request.'));
 		} else {
 			try {  
-	  		$response = $this->fb->get('/'.$this->pageId.'/posts?limit=20&fields=id,message,created_time,likes.limit(1).summary(true)', $this->accessToken );
+	  		$response = $this->fb->get('/'.$this->pageId.'/posts?limit='.$this->postLimit.'&fields=id,message,created_time,likes.limit(1).summary(true)', $this->accessToken );
 	  		$data = $response->getDecodedBody()['data'];
 	  		$status = $response->getHttpStatusCode();
 
 	  		$data = $this->orderByLikes($data);
 	  		json_output($status, array('status' => $status,'data' => $data));
 
-			} catch(Facebook\Exceptions\FacebookResponseException $e) {
-			  json_output(400, array('status' => 400,'message' => 'Graph returned an error: ' . $e->getMessage()));
-			  exit;
-			} catch(Facebook\Exceptions\FacebookSDKException $e) {
-			  json_output(400, array('status' => 400,'message' => 'SDK returned an error: ' . $e->getMessage()));
-			  exit;
+			} catch (Facebook\Exceptions\FacebookResponseException $e) {
+			  $errorCode = $e->getHttpStatusCode();
+				json_output($errorCode, array('status' => $errorCode,'message' => $e->getMessage()));
 			}
 		}	
 	}
 
 
 	/*############################################# Bussiness Logic ######################################################*/
-
+	/**
+	* Get elements occurrence within a set of arrays
+	* @param - array
+	* @param - int
+	* @return - array
+	*/
 	private function getTopLikes($arrays, $top) {
-
 		$uniqueUsers = array();
 		$allUsers    = array();
 		$structure   = array();
 
-		foreach ($arrays as $key => $values) {
-			foreach ($values as $key => $user) {
+		// Build unique users array and all users occurrence array 
+		foreach ($arrays as $values) {
+			foreach ($values['likes']['data'] as $user) {
 				array_push($allUsers, $user['id']);
 				$uniqueUsers[$user['id']] = $user['name'];
 			}
@@ -156,9 +143,13 @@ class Api extends CI_Controller {
 		return $structure;
 	}
 
+	/**
+	* Order a set of posts by their number of likes
+	* @param - array
+	* @return - array
+	*/
 	private function orderByLikes($data) {	
 		$structure = array();
-		
 		foreach ($data as $values) {
 			array_push(
 				$structure, 
@@ -170,13 +161,28 @@ class Api extends CI_Controller {
 				)
 			);
 		}
-
+		// Sort by provided callback
 		usort($structure, function($a, $b) {
 		    return $b['number_of_likes'] - $a['number_of_likes'];
 		});	
 		$structure = array_reverse($structure, true);
-
 		return $structure;
+	}
+
+	/**
+	* Return max value from an associative array
+	* @param - array
+	* @return - int
+	*/
+	private function getMaxLikes($data) {
+		$max = 0;
+		foreach ($data as $values) {
+			$likesNr = $values['likes']['summary']['total_count'];
+			if($max < $likesNr) {
+				$max = $likesNr;
+			}
+		}
+		return $max;
 	}
 
 }
