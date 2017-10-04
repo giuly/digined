@@ -26,6 +26,7 @@ Initialization (Add config details to a MongoDB collection):
 1. Uncomment line 20 (application/controller/Api.php)
 2. \*Acces application via browser or Postman (You should see a message like this: Inserted with Object ID '59d4dadc4fdf0304116b6bd3')
 3. Commnent it back (line 20).
+
 \* You can access any of the 3 available endpoints: 
   - http://yourlocal/api/get_latest_posts 
   - http://yourlocal/api/get_users_posts_likes
