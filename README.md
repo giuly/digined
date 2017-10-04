@@ -52,7 +52,7 @@ API Response(JSON):
         ...
 ```
 
-## Recomandation
+## Recommendation
 Postman as tool to access API endpoints
 
 
