@@ -31,6 +31,27 @@ Initialization (Add config details to a MongoDB collection):
   - http://yourlocal/api/get_users_posts_likes
   - http://yourlocal/api/get_posts_ordered
 
+## Request & Response
+
+API Requests: 
+  - GET api/get_latest_posts
+  - GET api/get_users_posts_likes
+  - GET api/get_posts_ordered
+  
+API Response-JSON: 
+```shell
+{
+    "status": 200,
+    "data": {
+        "0": {
+            "id": "901287109904861_1693243807375850",
+            "message": "Recunoaste! De cate ori nu ai facut si tu la fel? <3 #TasteTheFeeling",
+            "created_time": "2017-09-06T08:47:37+0000",
+            "number_of_likes": 18561
+        },
+        ...
+```
+
 ## Recomandation
 Postman as tool to access API endpoints
 
