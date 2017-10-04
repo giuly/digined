@@ -7,20 +7,25 @@ Use	Facebook’s API	to query	data for the CocaColaNetherlands FB page. Build	3	
 - Top	5	users	who	have	liked	most	of	these	20	posts
 - Prepare	a	data	structure	of	latest	20	posts,	ordered	based	on	the	number	of	likes	they	
 
-## Install
+## Install (e.g. Ubuntu 16.04 )
 
-e.g. Ubuntu 16.04 
-
-System configuration apart from php-fpm, nginx/apach etc.
+1. System configuration apart from php-fpm, nginx/apach etc.
 ```shell
 pecl install mongodb
 apt-get install php7.0-dev
 ```
-Run composer:
+2. Run composer:
 ```shell
 composer require jenssegers/mongodb --ignore-platform-reqs
 ```
-Move *vendor* folder under *application* folder
+3. Move *vendor* folder under *application* folder
 
-Application Configuarion
-Update MongoDB
+## Application Config
+
+Initialization: 
+1. Uncomment line 20 (application/controller/Api.php)
+2. \*Acces application via browser or Postman (You should see a message like this: Inserted with Object ID '59d4dadc4fdf0304116b6bd3')
+
+
+
+
