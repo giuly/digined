@@ -38,7 +38,7 @@ API Requests:
   - GET api/get_users_posts_likes
   - GET api/get_posts_ordered
   
-API Response-JSON: 
+API Response(JSON): 
 ```shell
 {
     "status": 200,
